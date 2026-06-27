@@ -20,7 +20,7 @@ All models share a common structure: a spatially and temporally weighted predict
 |---|---|---|
 | `STExp` / `STExpPred` | Baseline | Exponential |
 | `FuncSpTReg` / `FuncSpTRegPred` | Functional Mean | Exponential |
-| `hFuncIndSpTReg` / `FuncIndSpTRegPred` | Full (heterogeneous scale) | Exponential |
+| `hFuncIndSpTReg` / `FuncIndSpTRegPred` | Full  | Exponential |
 | `FuncIndBetaSpTReg` / `FuncIndBetaSpTRegPred` | Varying Coefficient | Exponential |
 | `bayes_collocated` / `bayes_collocated_pred` | Collocated (no kernel) | — |
 
@@ -103,4 +103,27 @@ Xmat[[i]][n, j] = Voronoi_area(n, j) × X(n, j)
 This parallel structure is critical: the C++ code computes spatial weights as `Wi = exp(-D.col(j) / phi)` and immediately applies them as `Wi' * X_i`, so row `n` of `dist[[i]][, j]` must correspond to the same physical detection as row `n` of `Xmat[[i]][, j]`.
 
 Zero-padded rows in `Xmat[[i]]` should have their corresponding `dist[[i]]` entries set to any finite value (e.g. `0` or `r`): they do not affect the result because the matching `Xmat` entries are zero.
+
+
+### Construction of `Lag`
+
+**`Lag[[i]]`:** a `T_i × T_X` matrix for monitoring location `i` where  `T_X` is the number of predictor time points (shared column dimension with `Xmat`, `dist`), and `T_i` the number of response time points at location `i` (rows of `Y` for location `i`).
+
+```
+Lag[[i]][ty, j] 
+```
+
+is the number of days (or whatever time unit is used consistently with `maxL`) between predictor time point `j` (i.e time at which jth column of `Xmat[[i]]` was recorded and response time point `ty`. (max(no. of days, 0)). 
+Each **row** `ty` corresponds to one response observation at location `i`. Each **column** `j` corresponds to one predictor time point. So row `ty` gives the full vector of lags from every predictor time point to response time `ty`.
+
+### Construction of `Ind`
+
+**`Ind[[i]]`:** a `T_i × T_X` matrix for monitoring location `i`, with entries in `{0, 1}`
+```
+Ind[[i]][ty, j] = 1   if  0 <= Lag[[i]][ty, j] <= q
+                = 0   otherwise
+```
+
+It is a binary matrix applied on top of `Lag`. A zero entry means predictor time `j` is either in the future relative to response `ty` (lag < 0) or further in the past than the maximum allowable lag (lag > `q`). Both cases are excluded from the weighted sum. `Lag` and `Ind` are separate because the exponential decay `exp(-lag/ell)` is applied only to valid (in-window) entries. If `Ind` were not applied, future predictor values (negative lags) and very distant past values would both receive non-zero exponential weights, which would be incorrect. `Ind` hard-zeros those contributions before the temporal kernel is applied.
+
 
