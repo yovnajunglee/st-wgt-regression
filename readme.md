@@ -1,21 +1,76 @@
-Code for Models under Application of `Bayesian spatio-temporal weighted regression for integrating missing and misaligned environmental data`
+# Bayesian Spatio-Temporal Weighted Regression
 
-The helper functions are described below:
-1. STExp, STExpPred: Baseline model (Exponential kernel functions)
-2. FuncSpTReg, FuncSpTRegPred: Functional Mean Model (Exponential kernel functions)
-3. hFuncIndSpTReg, FuncIndSpTRegPred: Full Model  (Exponential kernel functions)
-4. FuncIndBetaSpTReg, FuncIndBetaSpTRegPred: Varying Coefficient Model  (Exponential kernel functions)
+Code for models described in:
 
-The arguments in the functions (where applicable) are as follows:
-1. Xmat: List. Each item i in list corresponds to buffer (adjusted by the Voronoi quadrature) for location i. X[[i]] = N \times T_X matrix where N is an upper bound on the number of observations in a spatial buffer of size r and. Each element of X[[i]] = area of Voronoi cell*X.
-2. dist: List. d[[i]] consists of spatial distances of observations in X[[i]] from location i.
-3. Ind, Lag: List. Lag[[i]] is T_i \times T_X a lag matrix and Ind[[i]] is the corresponding indicator matrix for lag values <= q.
-4. maxL, Pmax: Temporal lag (q), spatial radius (r)
-5. Ny: Number of spatial locations.
-6. NyNt: Total number of space-time observations.
-7. Yvec: Vector of responses ordered by location, time. 
-8. param*_prior: Relates to choice of priors (scale/shape parameters) depending on specification in code. 
-9. param*_fixed: Parameters that are fixed to this value.
-10. Bmat: Matrix of splines or covariates. 
-11. FireInd: Indicator vector for smoke plume covariate. 
-12. init_param*: Initializations for parameters. 
+> **Application of Bayesian Spatio-Temporal Weighted Regression for Integrating Missing and Misaligned Environmental Data**
+
+---
+
+## Overview
+
+This repository provides C++ implementations (via **RcppArmadillo**) of Bayesian spatio-temporal regression models that integrate environmental exposure data across space and time using kernel-weighted aggregation. The models are designed to handle missing and misaligned data — for example, satellite-derived wildfire smoke observations that do not align exactly with ground-level air quality monitoring locations.
+
+All models share a common structure: a spatially and temporally weighted predictor is constructed using exponential kernel functions over user-specified spatial buffers and temporal lag windows, then embedded in a Bayesian linear regression fitted via MCMC.
+
+---
+
+## Models
+
+| Function pair | Model | Spatial kernel |
+|---|---|---|
+| `STExp` / `STExpPred` | Baseline | Exponential |
+| `FuncSpTReg` / `FuncSpTRegPred` | Functional Mean | Exponential |
+| `hFuncIndSpTReg` / `FuncIndSpTRegPred` | Full (heterogeneous scale) | Exponential |
+| `FuncIndBetaSpTReg` / `FuncIndBetaSpTRegPred` | Varying Coefficient | Exponential |
+| `bayes_collocated` / `bayes_collocated_pred` | Collocated (no kernel) | — |
+
+
+---
+
+## Arguments
+
+The following arguments appear across functions where applicable.
+
+| Argument | Type | Description |
+|---|---|---|
+| `Xmat` | `List` (length `Ny`) | Each element `Xmat[[i]]` is an `N × T_X` matrix of predictor values in the spatial buffer around location `i`. `N` is an upper bound on the number of observations within radius `r`. Each element is area-weighted: `Xmat[[i]][n,t] = Voronoi cell area × X`. |
+| `dist` | `List` (length `Ny`) | Each element `dist[[i]]` contains spatial distances from observations in `Xmat[[i]]` to location `i`. |
+| `Ind` | `List` (length `Ny`) | Each element `Ind[[i]]` is a `T_i × T_X` indicator matrix with 1 where the lag value is ≤ `maxL` (i.e., `q`), 0 otherwise. |
+| `Lag` | `List` (length `Ny`) | Each element `Lag[[i]]` is a `T_i × T_X` matrix of temporal lag values (in days) between response time points and predictor time points. |
+| `maxL` | `int` | Maximum temporal lag `q` (days). |
+| `Pmax` | `int` | Maximum spatial radius `r` (units matching `dist`). |
+| `Ny` | `int` | Number of spatial monitoring locations. |
+| `NyNt` | `int` | Total number of space–time observations (sum of `T_i` across all locations). |
+| `Yvec` | `mat` | Response vector ordered by location then time. |
+| `Bmat` | `mat` | Matrix of spline basis functions or additional covariates appended to the design matrix. |
+| `FireInd` | `mat` | Binary indicator vector (`NyNt × 1`): 1 on fire/smoke-plume days, 0 otherwise. |
+| `sigma_prior` | `vec` | Shape and rate parameters `(a, b)` for the Inverse-Gamma prior on `sigma²` (error variance). |
+| `sigmab_prior` | `vec` | Shape and rate parameters `(a, b)` for the Inverse-Gamma prior on `sigma_b²` (coefficient variance). |
+| `phi*_prior` | `vec` | Shape and rate parameters for the Gamma prior on the spatial scale `phi*`. |
+| `ell_prior` | `vec` | Shape and rate parameters for the Gamma prior on `1/ell` (temporal scale). |
+| `*_fixed` | `double` | Parameters held fixed at this value throughout sampling (e.g., `phi0_fixed`, `ell_fixed`). |
+| `init_beta` | `vec` | Initial values for the regression coefficient vector `beta`. |
+| `init_scale` | `vec` | Initial values for the kernel scale parameters `(phi, ell)`. |
+| `niter` | `int` | Total number of MCMC iterations. The first 50% are discarded as burn-in in prediction functions. |
+| `rphi*`, `rell` | `double` | Step-size variances for log-normal Metropolis-Hastings proposals for `phi*` and `ell`. |
+| `gamma` | `double` | Unused legacy argument (retained for API compatibility). |
+
+---
+
+## Return Values
+
+All MCMC functions return an R `List` containing posterior samples for each parameter. Prediction functions return an `NyNt × (niter/2)` matrix of posterior predictive draws.
+
+| Name | Description |
+|---|---|
+| `beta` | `dim × niter` matrix of regression coefficient samples |
+| `sigmae` | `niter`-vector of error variance samples (`sigma²`) |
+| `sigmab` | `niter`-vector of coefficient variance samples (`sigma_b²`) |
+| `phi` / `phi0` / `phi1` | `niter`-vector(s) of spatial scale samples |
+| `ell` | `niter`-vector of temporal scale samples |
+| `alpha` | `2 × niter` matrix of hierarchical log-scale regression coefficients (full model only) |
+| `nu` | `niter`-vector of log-scale variance samples (full model only) |
+| `accept1`, `accept2` | MH acceptance counts for scale parameters |
+| `prop` | `2 × niter` matrix of proposed scale values (for diagnostics) |
+
+---
