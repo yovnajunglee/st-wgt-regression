@@ -74,3 +74,33 @@ All MCMC functions return an R `List` containing posterior samples for each para
 | `prop` | `2 × niter` matrix of proposed scale values (for diagnostics) |
 
 ---
+
+## Details
+
+### Construction of `Xmat` (per location `i`)
+
+**`Xmat[[i]]`:** an `N × T_X` matrix for monitoring location `i`
+
+Each column `j` of `Xmat[[i]]` corresponds to one predictor time point (e.g. one day of satellite observations). Each row `n` corresponds to one potential covariate slot within the spatial buffer. The entry is:
+
+```
+Xmat[[i]][n, j] = Voronoi_area(n, j) × X(n, j)
+```
+1. Define the circular (or other shape) buffer of radius `r` around monitor `i`.
+2. For each predictor time point `j`:
+   a. Find all detections that fall within the buffer. Let there be `n_ij` of them.
+   b. Compute a Voronoi tessellation of those `n_ij` covariate points **within the buffer** and record each covariate's Voronoi cell area `a_n`.
+   c. Multiply: `Xmat[[i]][n, j] = a_n × x_n` for `n = 1, ..., n_ij`.
+   d. Zero-pad rows `n_ij + 1` through `N`.
+3. `N` should be set to the maximum `n_ij` observed across all `i` and `j`.
+   
+### Construction of `dist` (per location `i`)
+
+**`dist[[i]]`:** an `N × T_X` matrix for monitoring location `i`
+
+`dist[[i]]` has **exactly the same shape and row/column ordering as `Xmat[[i]]`**. Entry `dist[[i]][n, j]` is the distance from covariate `n` (at predictor time `j`) to monitoring location `i`.
+
+This parallel structure is critical: the C++ code computes spatial weights as `Wi = exp(-D.col(j) / phi)` and immediately applies them as `Wi' * X_i`, so row `n` of `dist[[i]][, j]` must correspond to the same physical detection as row `n` of `Xmat[[i]][, j]`.
+
+Zero-padded rows in `Xmat[[i]]` should have their corresponding `dist[[i]]` entries set to any finite value (e.g. `0` or `r`): they do not affect the result because the matching `Xmat` entries are zero.
+
