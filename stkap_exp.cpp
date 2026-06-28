@@ -121,7 +121,7 @@ arma::mat construct_Qmat_cov_List_fast(Rcpp::List Xmat,
 }
 
 // [[Rcpp::export]]
-Rcpp::List ST_Exp(Rcpp::List Xmat,
+Rcpp::List STExp(Rcpp::List Xmat,
                                  Rcpp::List dist,
                                  Rcpp::List Ind,
                                  Rcpp::List Lag,
@@ -272,7 +272,7 @@ Rcpp::List ST_Exp(Rcpp::List Xmat,
 
 
 //[[Rcpp::export]]
-arma::mat predict_cov_list(Rcpp::List Xmat_oos, Rcpp::List dist_oos,
+arma::mat STExpPred(Rcpp::List Xmat_oos, Rcpp::List dist_oos,
                            Rcpp::List Ind,
                            Rcpp::List L,
                            arma::mat Bmat,
