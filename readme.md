@@ -2,8 +2,7 @@
 
 Code for models described in:
 
-> **Application of Bayesian Spatio-Temporal Weighted Regression for Integrating Missing and Misaligned Environmental Data**
-(link to pre-print: [https://arxiv.org/abs/2511.02149](https://arxiv.org/abs/2511.02149)
+> **Application of Bayesian Spatio-Temporal Weighted Regression for Integrating Missing and Misaligned Environmental Data**\
 ---
 
 ## Overview
@@ -11,6 +10,8 @@ Code for models described in:
 This repository provides C++ implementations (via **RcppArmadillo**) of Bayesian spatio-temporal regression models that integrate environmental exposure data across space and time using kernel-weighted aggregation. The models are designed to handle missing and misaligned data — for example, satellite-derived wildfire smoke observations that do not align exactly with ground-level air quality monitoring locations.
 
 All models share a common structure: a spatially and temporally weighted predictor is constructed using exponential kernel functions over user-specified spatial buffers and temporal lag windows, then embedded in a Bayesian linear regression fitted via MCMC.
+
+(link to pre-print: [https://arxiv.org/abs/2511.02149](https://arxiv.org/abs/2511.02149)
 
 ---
 
