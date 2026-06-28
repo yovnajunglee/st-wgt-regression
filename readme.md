@@ -11,7 +11,7 @@ This repository provides C++ implementations (via **RcppArmadillo**) of Bayesian
 
 All models share a common structure: a spatially and temporally weighted predictor is constructed using exponential kernel functions over user-specified spatial buffers and temporal lag windows, then embedded in a Bayesian linear regression fitted via MCMC.
 
-(link to pre-print: [https://arxiv.org/abs/2511.02149](https://arxiv.org/abs/2511.02149)
+Link to pre-print: [https://arxiv.org/abs/2511.02149](https://arxiv.org/abs/2511.02149) (submitted to Spatial Statistics)
 
 ---
 
