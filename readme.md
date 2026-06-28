@@ -2,7 +2,7 @@
 
 Code for models described in:
 
-> **Application of Bayesian Spatio-Temporal Weighted Regression for Integrating Missing and Misaligned Environmental Data**\
+> **Application of Bayesian Spatio-Temporal Weighted Regression for Integrating Missing and Misaligned Environmental Data**
 ---
 
 ## Overview
